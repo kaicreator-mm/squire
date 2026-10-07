@@ -1,206 +1,188 @@
 # Squire v0.1.0 — Product Requirements Document
 
-Status: **DRAFT — ADVERSARIAL REVIEW REQUIRED / NOT FROZEN**
+Status: **DRAFT R2 — SUCCESSOR ADVERSARIAL REVIEW REQUIRED / NOT FROZEN**
 
 ## 1. Product
 
-Squire is a **harness-agnostic work-offloading runtime for AI agents**.
+Squire is a **Harness-independent work-offloading core with Harness-specific integration adapters**.
 
-Squire does not replace Claude Code, Codex, Pi, OpenCode, or another primary Harness. It sits outside the Harness and attempts to route bounded work to cheaper, more deterministic capabilities when doing so is expected to reduce successful-task cost.
+It does not replace the primary Coding Agent/Harness. For bounded supported work, it decides whether to:
+- leave the work to the Harness/strong Agent;
+- offload it to a lower-cost capability;
+- use a bounded composition of capabilities.
 
 Product statement:
 
 > Let the Agent do only work that actually requires Agent-level intelligence.
 
-## 2. Target user
+"Harness-independent" describes **core semantics and policy ownership**, not shallow integration. A Harness adapter may be deeply integrated with lifecycle hooks while remaining policy-thin.
+
+## 2. Target user and adoption hypothesis
 
 Primary v0.1 user:
-
-- developer or engineering team already using one or more coding-agent Harnesses;
+- developer/team already using coding-agent Harnesses;
 - willing to run a local companion runtime;
-- experiences repeated repository exploration, environment/tool discovery, verbose observations, mechanical validation, or capability-selection overhead.
+- values reduced Agent work/cost without accepting correctness loss.
 
-Secondary future user:
+Product-adoption hypothesis:
+- users will tolerate a separate companion process only if installation/configuration/compatibility burden remains small relative to measured benefit.
 
-- Agent/Harness vendors that want to consume Squire as an external optimization/runtime service.
+This operational burden is a Product gate, not an implementation afterthought.
 
-## 3. Problem
+## 3. Problem / gap
 
-Modern Agent Harnesses expose increasingly capable models and tools, but substantial task work is still performed through frontier-model turns even when the work is deterministic, searchable, parseable, cached, mechanically verifiable, or better served by a specialized capability.
+Offloadable work exists, and OpenSpace/SoL-Pi demonstrate adjacent solutions.
 
-The market already contains strong individual capabilities and Harness-specific efficiency mechanisms. The missing product hypothesis is a neutral layer that decides **whether the primary Agent should do the work at all**.
+Squire does **not** claim novelty from:
+- being external to one Harness;
+- being cross-Agent;
+- exposing tools/Skills/MCP;
+- context reduction;
+- generic runtime/capability management.
+
+The independent product hypothesis is the following combined layer:
+
+1. normalize a bounded Work request across supported Harnesses;
+2. decide whether strong-Agent execution is warranted;
+3. choose among eligible providers under explicit safety/net-value constraints;
+4. preserve exact/recoverable evidence;
+5. attribute task-level outcome/resource cost across Harnesses.
 
 ## 4. Goals
 
-### G1 — Reduce strong-Agent work
-
-For supported work classes, reduce at least one of:
-
-- model calls;
-- fresh input tokens;
-- tool round-trips;
-- redundant reads/searches;
-- avoidable retries;
-- wall-clock;
-- total cost per successful task.
-
-### G2 — Preserve task quality
-
-Efficiency is subordinate to success/correctness. Raw evidence or exact recovery paths must remain available when a reducer/summary/handle is used.
-
-### G3 — Stay Harness-agnostic
-
-Core Work/Capability/Decision/Evidence contracts MUST NOT depend on one Harness. Harness-specific behavior belongs in thin adapters.
-
-### G4 — Compose mature capabilities
-
-Prefer wrapping mature tools/runtimes to rebuilding them. OpenSpace and SoL-Pi are reference subjects, not mandatory dependencies.
-
-### G5 — Make ROI measurable
-
-Every offload decision used in evaluation must be attributable enough to compare decision cost with observed task outcome.
+- **Quality first:** no efficiency result may override correctness/security/evidence gates.
+- **Reduce Agent work:** lower total measured task resource cost after all Squire overhead.
+- **Harness-independent core:** same core Work/Decision/Evidence policy for at least one Work class across two Harnesses.
+- **Composition before reinvention:** wrap/reuse mature providers.
+- **Measurable ROI:** decisions and outcomes must be attributable enough for matched evaluation.
+- **Safe failure:** side-effect uncertainty must never be converted into blind retry.
 
 ## 5. Non-goals
 
 v0.1 will not:
-
-- implement a primary coding Agent;
-- own the reasoning/planning/conversation loop;
+- implement a primary coding Agent or own reasoning/planning/conversation;
 - implement general multi-agent orchestration;
 - build a generic Skill/MCP marketplace;
-- build a general cloud sandbox platform;
-- replace mature LSP/search/docs/runtime tools without demonstrated requirement;
-- perform uncontrolled online self-modification;
-- claim universal benefit across all Harnesses/tasks.
+- build a general sandbox platform;
+- recreate mature search/LSP/docs/runtime systems without evidence;
+- claim every Harness supports every Work class;
+- patch/fork Harness cores to manufacture portability;
+- perform uncontrolled online self-modification.
 
-## 6. Core product contracts
+## 6. Core contracts
 
-Exact schemas are an L2 decision, but v0.1 must preserve these semantic boundaries.
+### 6.1 Work
 
-### Work
+A provider-neutral bounded unit that may otherwise consume Agent effort.
 
-A bounded unit that may otherwise consume Agent effort.
+v0.1 primary Work families:
+- **W1 Repository Lookup** — read-only cross-Harness primary.
+- **W2 Post-change Mechanical Validation** — deterministic/fusion secondary.
 
-Examples:
+Environment/toolchain preflight is a supporting capability, not a third primary acceptance Work class.
 
-- repository text search;
-- symbol/reference lookup;
-- project/toolchain inspection;
-- documentation lookup;
-- test/build log reduction;
-- deterministic post-change validation;
-- repeated observation recall.
+### 6.2 Capability
 
-A Work request describes intent and constraints, not a provider-specific command.
+A provider/binding able to satisfy a Work class.
 
-### Capability
-
-A mechanism capable of satisfying one or more Work classes.
-
-A Capability exposes at least:
-
-- work classes supported;
-- availability/currentness;
-- startup/activation cost;
-- expected execution cost;
+Required semantics:
+- supported Work class;
+- current availability/currentness;
+- activation/startup cost;
+- expected execution/context cost;
+- permission/effect class;
 - evidence/recovery behavior;
-- permission/security requirements;
-- provider identity.
+- provider identity/version;
+- deterministic/idempotent characteristics where relevant.
 
-### Decision
+### 6.3 Decision
 
-A selection result that answers:
-
+One of:
 ```text
-execute in Agent
-or
-offload to Capability X
-or
-compose bounded Capabilities X -> Y
+HARNESS
+OFFLOAD(provider)
+COMPOSE(bounded providers)
+NO_ACTION
+RECONCILE
 ```
 
-The decision must support a reason code and measurable costs. v0.1 may be rule-based; a learned decision model is NOT required.
+Every adaptive decision must carry a reason code and enough predicted/observed cost data for evaluation.
 
-### Evidence
+v0.1 policy may be deterministic/rule-based. A learned model is explicitly not required.
 
-The result returned to the Harness, including:
+### 6.4 Evidence
 
+Result returned to the Harness:
 - bounded Agent-facing result;
-- provider identity;
-- raw/exact recovery reference when applicable;
-- failure/uncertainty state;
-- timing/cost metadata needed for evaluation.
+- provider identity/version;
+- uncertainty/failure class;
+- raw/exact recovery reference when material;
+- effect/reconciliation state for mutations;
+- timing/resource metadata needed for evaluation.
 
-### Outcome
+### 6.5 Outcome
 
-Task-level result used to judge the decision policy. v0.1 should capture:
-
-- success/failure;
+Task-level evaluation record:
+- accepted success/failure;
+- correctness/security gate status;
 - strong-model calls;
 - fresh/cached tokens when available;
 - tool calls;
 - wall-clock;
-- Squire overhead;
-- retries/reversal/re-expansion when observable.
+- provider and Squire overhead;
+- retries/re-expansion/reversal;
+- failed/abandoned attempt cost;
+- Harness / model / provider configuration identity.
 
-## 7. Harness adapter boundary
+## 7. Harness integration contract
 
-The adapter layer is intentionally thin.
+A Harness is supported **per Work class**.
 
-Adapters may translate:
+Minimum W1 semantics:
+1. supported capability registration/invocation or equivalent supported interception;
+2. stable run/task correlation;
+3. project/cwd identity and bounded request handoff;
+4. permission propagation without widening;
+5. bounded result admission;
+6. exact/raw recovery when applicable;
+7. sufficient accounting for matched resource evaluation.
 
-```text
-Harness event -> Squire Work/Observation event
-Squire result/action -> Harness-visible result
-```
+Side-effecting Work additionally requires:
+8. effect identity/reconciliation sufficient to distinguish success, pre-effect failure and `UNKNOWN_EFFECT`.
 
-Adapters MUST NOT own:
+If these semantics are unavailable without patching/forking the Harness, that Harness is **UNSUPPORTED for that Work class**.
 
-- provider selection policy;
-- core ROI logic;
-- cross-Harness runtime state;
-- product truth/evaluation policy.
+Adapter rule:
 
-v0.1 target: at least two Harness adapters before claiming Harness-general support.
+> Adapters may be integration-deep but MUST remain policy-thin.
 
-Initial candidates: **Codex + Pi** because they provide a useful contrast and SoL-Pi supplies a Pi efficiency baseline. Final selection is an L2 current-capability decision.
+Adapters may own host API translation, lifecycle hookup, serialization and correlation. They MUST NOT own provider selection, ROI thresholds, evidence correctness rules or Product benchmark policy.
 
-## 8. Capability/provider strategy
+v0.1 must demonstrate W1 through two Harnesses. Initial L2 candidates remain **Codex + Pi**, but L2 may replace either only with explicit current-interface evidence and Product-equivalent coverage.
 
-Providers are replaceable.
+## 8. Provider strategy
 
-Initial candidate families:
+At least one primary Work class must have >=2 eligible competing providers under one Work contract.
 
-1. Repository/code:
-   - native search/rg;
-   - LSP;
-   - AST search;
-   - optional CodeGraph/Sourcegraph-class provider.
+Candidate W1 providers:
+- low-cost text/search provider (e.g. rg/native indexed text search);
+- semantic provider (e.g. LSP or code-graph/search provider).
 
-2. Knowledge/docs:
-   - local project docs;
-   - optional Context7-class provider.
+Candidate W2 provider/mechanism:
+- deterministic command fusion/validation inspired by SoL-Pi Action Fusion.
 
-3. Observation/evidence:
-   - deterministic parsers;
-   - observation handle/raw recovery;
-   - optional reducer model.
+OpenSpace:
+- may be a Skill/capability/evidence provider or reusable reference;
+- is not a mandatory dependency.
 
-4. Environment/preflight:
-   - repository/toolchain/version detection;
-   - command/test/build discovery.
+SoL-Pi:
+- is the primary fixed-efficiency reference/baseline for Pi;
+- mechanisms may be reused/adapted where the exact license/API boundary permits;
+- Squire does not reimplement them merely for ownership.
 
-5. External runtime:
-   - OpenSpace may be evaluated as a capability/skill/evidence provider;
-   - SoL-Pi mechanisms may be reused/adapted where license/API boundaries permit.
+## 9. Decision and ROI policy
 
-No provider is mandatory until L2 evidence supports it.
-
-## 9. Decision policy
-
-v0.1 uses deterministic/rule-based policy first.
-
-Conceptual objective:
+Conceptual net value:
 
 ```text
 ExpectedNetValue =
@@ -212,117 +194,177 @@ ExpectedNetValue =
   - FailureRiskCost
 ```
 
-The exact weighting is experimental.
+Safety/correctness gates precede this calculation.
 
-Policy requirements:
-
-- fail open to normal Harness behavior when Squire cannot make a safe decision;
-- no offload solely because a capability exists;
-- no compression/reduction solely because output is large;
+Rules:
+- capability existence is not permission to offload;
+- negative/borderline expected net value => `HARNESS`;
+- stale/unknown-currentness state cannot justify a currentness-dependent offload;
+- insufficient telemetry cannot justify an adaptive ROI claim;
 - historical ROI is evidence, not correctness authority.
 
-## 10. MVP scope
+## 10. Failure and fallback semantics
 
-v0.1 MVP should implement the smallest complete loop:
+Canonical v0.1 failure classes:
+
+- `UNSUPPORTED_INTEGRATION`
+- `STALE_OR_UNKNOWN_STATE`
+- `PROVIDER_UNAVAILABLE`
+- `EVIDENCE_INTEGRITY_FAILURE`
+- `PERMISSION_MISMATCH`
+- `INSUFFICIENT_TELEMETRY`
+- `NON_POSITIVE_OR_BORDERLINE_VALUE`
+- `UNKNOWN_EFFECT`
+
+Fallback policy:
+- read-only/pre-effect failures may defer to the normal Harness path when permissions/evidence remain valid;
+- evidence reducer/handle failure returns original/exact evidence or fails closed;
+- permission mismatch always fails closed;
+- `UNKNOWN_EFFECT` **MUST stop automatic retry/fallback mutation** and enter reconciliation/verification before any retry;
+- Squire MUST NOT represent unknown side-effect completion as ordinary failure.
+
+## 11. MVP scope
+
+Smallest complete v0.1 loop:
 
 ```text
 Harness Adapter
-      ->
-Work classification
-      ->
-Capability availability + selection
-      ->
-Provider execution
-      ->
-Evidence return/recovery
-      ->
-Outcome telemetry
+ -> Work
+ -> Eligibility / state
+ -> Decision
+ -> Provider
+ -> Evidence / recovery
+ -> Outcome telemetry
 ```
 
-Required MVP work classes:
+Mandatory:
+- W1 through two supported Harness adapters;
+- >=2 W1 providers under the same contract;
+- W2 one deterministic/fusion implementation;
+- safe fallback/failure semantics;
+- matched benchmark harness.
 
-- repository exploration / lookup;
-- environment preflight;
-- observation/log handling;
-- one mechanical validation/fusion pattern.
+Optional / deferred:
+- generalized log reducer;
+- general environment-preflight product surface;
+- learned decision model;
+- Skill marketplace;
+- broad provider ecosystem.
 
-At least one work class must support more than one competing provider so selection behavior is real rather than hard-coded dispatch.
+## 12. Frozen benchmark contract requirements
 
-## 11. Benchmark / acceptance
+The exact benchmark subject/task list is frozen during L2 before candidate evaluation, but the Product-level rules below are already mandatory.
 
-### Baselines
+### Sampling / split
 
-Where technically applicable:
+- predeclare task source and inclusion/exclusion;
+- predeclare Harness/model versions and resource budget;
+- use a calibration split for provider/policy selection;
+- use a held-out evaluation split for primary claims;
+- do not tune on held-out results.
 
-- Baseline A: unmodified Harness;
-- Baseline B: fixed efficiency mechanisms/profile, including SoL-Pi-style baseline for Pi;
-- Candidate: Harness + Squire adaptive offloading.
+### Offload classification
 
-### Product acceptance
+Freeze a rubric before candidate outcome evaluation. Include harmful/non-offloadable negative examples.
 
-v0.1 Product validation must demonstrate:
+### Stochastic treatment
 
-1. **Quality:** no material correctness regression on the frozen primary benchmark; exact threshold to be frozen after L2 statistical-design evidence.
-2. **Net efficiency:** positive reduction in successful-task cost/work after including Squire overhead.
-3. **Materiality:** at least one primary work class shows >=20% net reduction in its targeted work metric on matched tasks.
-4. **Harness independence:** the same core contracts execute through at least two Harness adapters without separate core implementations.
-5. **Adaptive value:** at least one task class demonstrates a repeatable advantage over a fixed always-on provider/mechanism, or the adaptive-selection hypothesis is explicitly rejected.
-6. **Recoverability:** reducer/handle paths used in validation can recover exact/raw evidence as designed.
+Use matched tasks/configuration; repeat runs where stochasticity is material. Predeclare aggregation and uncertainty method.
 
-No token/compression metric alone can satisfy product acceptance.
+### Quality guardrail
 
-## 12. Product gates
+For v0.1 exploration:
+- accepted task-success non-inferiority margin: **5 percentage points** vs matched baseline;
+- any critical correctness/security/evidence-integrity regression: **automatic FAIL**.
 
-### PG1 — Agent Work Waste Study
+Efficiency is evaluated only after quality passes.
 
-Required before claiming broad product value.
+### Resource accounting
 
-Output:
+Include:
+- all strong-model/API resource cost;
+- all failed/retried/abandoned attempts;
+- Squire startup/runtime/provider overhead;
+- provider activation/index costs amortized only by a predeclared rule;
+- wall-clock and tool calls as secondary dimensions.
 
-- work-class taxonomy;
-- measured offloadable-work ratio;
-- harmful-offload counterexamples;
-- Harness-specific vs Harness-independent patterns.
+Primary economic metric:
 
-### PG2 — Harness interception feasibility
+> **total measured resource cost per accepted successful outcome**, with all attempt costs included.
 
-L2 must prove that the chosen Harnesses expose enough supported hooks/interfaces to implement the adapter without patching/forking their core.
+Report success rate separately; cost-per-success never hides failure-rate regression.
 
-### PG3 — Provider composition feasibility
+### Adaptive baseline
 
-L2 must prove at least one real Work class can be served by interchangeable providers under one contract.
+Adaptive Squire must beat or justify itself against the **best fixed policy selected on calibration** using the same eligible providers and budget.
 
-### PG4 — Evidence integrity
+### Reporting
 
-Reduction/handle/provider results must have explicit failure and recovery semantics.
+Report:
+- aggregate;
+- per Harness;
+- per Work class;
+- uncertainty/confidence;
+- negative outcomes and fallback/reconciliation frequency.
 
-### PG5 — Task-level benchmark
+Post-hoc winners on held-out data are exploratory only and cannot satisfy the primary Product gate without independent revalidation.
 
-Release qualification requires real task-level evidence, not component microbenchmarks only.
+## 13. Product acceptance gates
 
-## 13. Reference subjects
+### PG1 — Agent Work Waste / materiality
+Using the frozen rubric/sample, >=25% of measured W1/W2-relevant Agent tool/turn resource is safely offloadable/avoidable.
+
+### PG2 — Net Work reduction
+At least one primary Work class shows >=20% net reduction in targeted resource cost after all Squire overhead while passing quality.
+
+### PG3 — Harness-independent core
+W1 runs through two supported Harness adapters under one core Work/Decision/Evidence policy; adapter-specific policy duplication is not allowed.
+
+### PG4 — Adaptive value
+At least one predeclared W1 stratum shows repeatable positive delta over the calibration-selected best fixed policy with the same provider set/budget. If not, adaptive selection is rejected/narrowed rather than declared successful.
+
+### PG5 — Evidence integrity
+Exact/raw recovery succeeds for all primary validation paths that use reduction/handles; mismatch is correctness FAIL.
+
+### PG6 — Operational burden
+Measure install/start/config/update and idle/runtime resource burden. Dogfood must show the companion runtime can remain enabled in normal use without operational burden erasing the measured benefit.
+
+## 14. Strategic durability hypothesis
+
+Potential durable value is in:
+- cross-Harness compatibility corpus;
+- Work/Capability/Evidence/Outcome normalization;
+- provider benchmark/currentness data;
+- outcome attribution;
+- safety/recovery semantics;
+- transferable selection policy.
+
+If those assets do not become transferable across Harnesses, Squire SHOULD narrow into a smaller library/provider set or upstream mechanisms instead of becoming generic integration glue.
+
+## 15. Reference subjects
 
 - `HKUDS/OpenSpace@38277815ed44a53d757973c2bc4454c3b6426698`
 - `NVlabs/SoL-Pi@03529c710269d3e3336a033cead49a95189987f1`
 
-These references inform L2 and implementation selection. They do not own Squire product authority and must not silently become normative dependencies.
+They are evidence/reference subjects, not Squire authority and not mandatory dependencies.
 
-## 14. Explicit unknowns for adversarial review
+## 16. L2 obligations after Product Freeze
 
-- Is an external Harness-agnostic interception layer technically possible without losing the deep integration benefits of Harness-specific extensions?
-- Does adaptive capability selection provide enough gain beyond a small fixed mechanism set?
-- Can Squire obtain comparable telemetry across Harnesses without fragile provider-specific scraping?
-- Does provider startup/indexing overhead erase the expected savings?
-- Is the cross-Harness state useful enough to justify a persistent runtime?
-- Can the core remain thin, or does provider/Harness compatibility dominate engineering cost?
-- Should v0.1 target coding tasks only, or is the Work contract already generic enough to stay domain-neutral without expanding implementation scope?
+L2 must prove, before implementation expansion:
+- supported current integration surfaces for both selected Harnesses;
+- W1 same-core feasibility without patching/forking;
+- provider interchangeability for W1;
+- effect/reconciliation model for W2;
+- telemetry/accounting feasibility;
+- benchmark exact subject/task split and statistical treatment;
+- REUSE / WRAP / EXTEND / NEW / NOT_NEEDED disposition for OpenSpace and SoL-Pi components.
 
-## 15. Freeze rule
+## 17. Freeze rule
 
 This PRD is **NOT FROZEN**.
 
-It may be frozen only after:
-- independent adversarial Product/L1 review;
-- P0/P1 disposition;
-- explicit decision on v0.1 Harness subjects and benchmark design;
-- exact revision checkpoint on `version/v0.1.0`.
+Freeze requires:
+1. fresh independent adversarial review of the successor exact SHA/tree;
+2. 0 unresolved P0/P1;
+3. durable Product Freeze checkpoint on Issue #1;
+4. explicit L2 authorization only after that checkpoint.
