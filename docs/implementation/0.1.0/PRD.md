@@ -271,13 +271,17 @@ Freeze a rubric before candidate outcome evaluation. Include harmful/non-offload
 
 Use matched tasks/configuration; repeat runs where stochasticity is material. Predeclare aggregation and uncertainty method.
 
-### Quality guardrail
+### Quality guardrail — Product acceptance, not statistical screening
 
-For v0.1 exploration:
-- accepted task-success non-inferiority margin: **5 percentage points** vs matched baseline;
-- any critical correctness/security/evidence-integrity regression: **automatic FAIL**.
+The **Product** tolerates no measured degradation in accepted task-success rate on the frozen, matched, held-out primary evaluation.
 
-Efficiency is evaluated only after quality passes.
+- A candidate with a negative observed accepted task-success delta relative to the matched baseline **FAILS** the v0.1 Product quality gate, regardless of savings.
+- A candidate with a non-negative observed delta must also provide sufficient predeclared statistical evidence to support the non-degradation claim; an underpowered or ambiguous comparison is `INCONCLUSIVE / NOT_PROVEN`, not `PASS`.
+- L2 owns the experimental procedure, paired/repeated-run design, uncertainty reporting, sample sufficiency and decision implementation, **not** the authority to authorize a positive allowable product degradation margin.
+- Calibration-stage screening bands (including an illustrative 5 percentage-point exploration band) are **non-authoritative diagnostics**. They never serve as Product acceptance tolerances or permit a real 5-point loss.
+- Any critical correctness/security/evidence-integrity regression is an **automatic FAIL**.
+
+Only after the quality gate is satisfied may the Product evaluate efficiency or ROI. Cost-per-success cannot override this gate.
 
 ### Resource accounting
 
